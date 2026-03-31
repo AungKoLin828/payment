@@ -1,0 +1,20 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/payment_db
+    username: postgres
+    password: password
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+
+kbzpay:
+  api-url: https://sandbox.kbzpay.com/api
+  api-key: your-api-key
+  merchant-id: merchant123
+
+wavepay:
+  api-url: https://sandbox.wavepay.com/api
+  api-key: your-api-key
+  merchant-id: merchant123
