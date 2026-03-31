@@ -1,10 +1,8 @@
 package com.payment.service;
 
-
-import com.payment.domain.Payment;
+import com.payment.domain.PaymentStatus;
 import com.payment.repository.PaymentRepository;
 import com.payment.dto.PaymentCallbackDto;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
@@ -12,27 +10,43 @@ import java.time.LocalDateTime;
 
 @Slf4j
 @Service
-@RequiredArgsConstructor
-public class PaymentCallbackServiceImpl
-        implements PaymentCallbackService {
+public class PaymentCallbackServiceImpl implements PaymentCallbackService {
 
     private final PaymentRepository repository;
+
+    public PaymentCallbackServiceImpl(PaymentRepository repository){
+        this.repository = repository;
+    }
 
     @Override
     public void handleCallback(PaymentCallbackDto callback) {
 
-        Payment payment = repository
-                .findByReference(callback.reference())
-                .orElseThrow(() ->
-                        new RuntimeException("Payment not found")
-                );
+        repository.findByReference(callback.reference()).ifPresentOrElse(payment -> {
 
-        payment.setStatus(callback.status());
-        payment.setTransactionId(callback.transactionId());
-        payment.setUpdatedAt(LocalDateTime.now());
+            PaymentStatus mappedStatus = mapStatus(callback.status());
 
-        repository.save(payment);
+            payment.setStatus(mappedStatus.name());
+            payment.setTransactionId(callback.transactionId());
+            payment.setUpdatedAt(LocalDateTime.now());
 
-        log.info("Payment updated {}", callback.reference());
+            repository.save(payment);
+
+            log.info("Payment {} updated to {} via {}",
+                    payment.getReference(),
+                    mappedStatus,
+                    callback.provider());
+
+        }, () -> log.warn("Payment not found for reference {}", callback.reference()));
+    }
+
+    private PaymentStatus mapStatus(String status) {
+        if (status == null) return PaymentStatus.PENDING;
+
+        return switch (status.toUpperCase()) {
+            case "SUCCESS", "PAID" -> PaymentStatus.SUCCESS;
+            case "FAILED", "ERROR" -> PaymentStatus.FAILED;
+            case "EXPIRED", "TIMEOUT" -> PaymentStatus.EXPIRED;
+            default -> PaymentStatus.PENDING;
+        };
     }
 }
