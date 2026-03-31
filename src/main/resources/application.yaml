@@ -2,19 +2,37 @@ spring:
   datasource:
     url: jdbc:postgresql://localhost:5432/payment_db
     username: postgres
-    password: password
-
+    password: ${DB_PASSWORD:password} # fallback to 'password' if env not set
+    driver-class-name: org.postgresql.Driver
   jpa:
     hibernate:
-      ddl-auto: update
-    show-sql: true
+      ddl-auto: update # consider 'validate' or 'none' for production
+    show-sql: false # disable in prod, enable only for dev
+    properties:
+      hibernate:
+        format_sql: true
+        jdbc.lob.non_contextual_creation: true
 
+# KBZPay Configuration
 kbzpay:
   api-url: https://sandbox.kbzpay.com/api
-  api-key: your-api-key
-  merchant-id: merchant123
+  api-key: ${KBZPAY_API_KEY:your-api-key} # load from environment variable
+  merchant-id: ${KBZPAY_MERCHANT_ID:merchant123}
+  timeout:
+    connect: 5000 # in ms
+    read: 10000 # in ms
 
+# WavePay Configuration
 wavepay:
   api-url: https://sandbox.wavepay.com/api
-  api-key: your-api-key
-  merchant-id: merchant123
+  api-key: ${WAVEPAY_API_KEY:your-api-key} # load from environment variable
+  merchant-id: ${WAVEPAY_MERCHANT_ID:merchant123}
+  timeout:
+    connect: 5000
+    read: 10000
+
+# Optional: Server settings
+server:
+  port: 8080
+  servlet:
+    context-path: /api
